@@ -86,3 +86,5 @@ fetch_hkjc_world50_ranking();
 
 
 
+# This script fetches the HKJC World 50 horse ranking table from the official website.
+# It sends an HTTP request, parses the HTML using BeautifulSoup, and extracts table headers and rows into a DataFrame.
