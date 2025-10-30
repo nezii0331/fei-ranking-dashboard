@@ -44,8 +44,30 @@ class HKJCparser:
                 new_columns.append(self.alias[col_clean])
             else:
                 new_columns.append(col) #otherwise stay original name
-        df.columns = new_columns
-        return df 
+        df.columns = new_columns 
+        return df
+
+    #clean data
+    def _strip_and_collapse(self, df: pd.DataFrame) ->pd.DataFrame:
+        """
+        for all string in the columns：
+        1) convert values into strings
+        2) replace NBSPs with normal spaces
+        3) Trim leading and trailing spaces
+        4) Merge multiple spaces, tabs, or newlines into a single space.
+        """
+
+        obj_cols = df.select_dtypes(include="object").columns
+        for col in obj_cols:
+            df[col] = df[col].astype(str)
+
+            df[col] = df[col].str.replace("\u00A0", " ", regex=False)
+            
+            df[col] = df[col].str.strip()
+
+            df[col] = df[col].str.replace(r"\s+", " ", regex=True)
+        
+        return df
 
 # test
 if __name__ == "__main__": 
@@ -56,3 +78,15 @@ if __name__ == "__main__":
     df = pd.DataFrame(columns = ["Horse Name", "Ranking", "YOF", "coach"])
     new_df = parser._rename_columns(df)
     print("Test new columns:", (list(new_df.columns)))
+    data = {
+        "Horse_name": ["  Romantic\u00A0Warrior  ", "  Equinox", None],
+        "Sex": ["  male  ", "  GELDING ", "  F  "],
+        "Rating": [" 123 (HK) ", " 129* ", "  117  "],  
+        "Age": [6, 5, 4],  
+    }
+    df = pd.DataFrame(data)
+    print("\n--- Before ---")
+    print(df)
+    clean_df = parser._strip_and_collapse(df.copy())
+    print("\n--- After strip/collapse ---")
+    print(clean_df)
