@@ -69,6 +69,71 @@ class HKJCparser:
         
         return df
 
+    def _clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Extract numeric rating from strings like '123 (HK)' or '125*'
+        and convert to integer. If no number found, set as None.
+        """
+        if "Rating" not in df.columns:
+            return df
+        
+        def extract_number(s):
+            if pd.isna(s):   #if the value is None or NaN, return None
+                return None
+            m = re.search(r"\d+", str(s)) #search for the first sequence of digits #\d+ means [0-9] and one or more digits
+            if m:
+                return int (m.group()) #convert the sequence of digits to an integer
+            else:
+                return None   #if no number found, return None
+        df["Rating"] = df["Rating"].apply(extract_number) #apply the function to the Rating column
+        return df
+
+
+    def _clean_sex(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Normalize the sex column
+        """
+
+        if "Sex" not in df.columns:
+            return df
+        
+        # CREATE A MAPPING TABLE
+        mapping ={
+            "male": "M", "m": "M",
+            "female": "F", "f": "F", "filly": "F","mare": "F", 
+            "gelding": "G", "g":"G", 
+            "colt": "C", "c":"C",
+        }
+
+        def normalize_sex(s):
+            if pd.isna(s):
+                return None
+            val = str(s).strip().lower()
+            return mapping.get(val, s)
+
+        #use method to normalize datas    
+        df["Sex"] = df["Sex"].apply(normalize_sex)
+
+        return df
+
+
+    def numeric_safe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Safely convert numeric-like columns (Rank, Age, Rating) to integers.
+        """
+
+        numeric_cols = ["Ranking", "Age" ,"Rating"]
+
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], error="coerce").astype("Int64")
+
+        return df
+
+    
+
+
+
 # test
 if __name__ == "__main__": 
     parser = HKJCparser() #call __init__
