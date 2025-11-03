@@ -122,16 +122,59 @@ class HKJCparser:
         Safely convert numeric-like columns (Rank, Age, Rating) to integers.
         """
 
-        numeric_cols = ["Ranking", "Age" ,"Rating"]
+        numeric_cols = ["Rank", "Age" ,"Rating"]
 
         for col in numeric_cols:
             if col in df.columns:
-                df[col] = pd.to_numeric(df[col], error="coerce").astype("Int64")
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
         return df
 
     
+    # search check alien sort column
+    def _ensure_required_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Ensure all required columns exist; fill missing with NA and order columns.
+        """
+        missing = [c for c in self.required_columns if c not in df.columns]
+        for c in missing:
+            df[c] =pd.NA
 
+        df = df[self.required_columns]
+
+        return df
+
+    # parse all
+    def parse(self, df_table: pd.DataFrame) -> pd.DataFrame:
+        """
+        Full pipline :rename → strip → field cleans → dtypes → ensure cols → final tidy.
+        """
+        if df_table is None or df_table.empty:
+            raise ValueError("Empty DataFrame passed to parser.")
+
+        df = df_table.copy()
+
+        #Step1 :Reame columns
+        df = self._rename_columns(df)
+
+        #Step2 :Clean text/ spaces
+        df = self._strip_and_collapse(df)
+
+        #Step3 :clean specific columns
+        df = self._clean_data(df)
+        df = self._clean_sex(df)
+
+        #Convert numeric types
+        df = self.numeric_safe(df)
+
+        #Ensure required columns
+        df = self._ensure_required_columns(df)
+
+        #Drop invalid rows(no rank)
+        if "Rank" in df.columns:
+            df= df.dropna(subset=["Rank"])
+
+        return df.reset_index(drop=True)
 
 
 # test
